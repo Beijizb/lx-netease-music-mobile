@@ -33,24 +33,29 @@ jobs:
           fi
           # 检查是否有有效的签名 secrets
           chmod +x ./gradlew
-          # 使用默认值避免空字符串问题
-          KEYSTORE_FILE="${{ secrets.MYAPP_UPLOAD_STORE_FILE || '' }}"
-          KEYSTORE_BASE64="${{ secrets.MYAPP_KEYSTORE_BASE64 || '' }}"
-          # 严格检查：确保两个变量都不为空，且文件名长度大于0
-          if [ -n "${KEYSTORE_BASE64}" ] && [ "${KEYSTORE_BASE64}" != "" ] && \
-             [ -n "${KEYSTORE_FILE}" ] && [ "${KEYSTORE_FILE}" != "" ] && \
-             [ "${#KEYSTORE_FILE}" -gt 0 ] && [ "${#KEYSTORE_BASE64}" -gt 10 ]; then
+          # 读取 secrets（如果未设置则为空字符串）
+          KEYSTORE_FILE="${{ secrets.MYAPP_UPLOAD_STORE_FILE }}"
+          KEYSTORE_BASE64="${{ secrets.MYAPP_KEYSTORE_BASE64 }}"
+          # 严格验证：确保文件名和 base64 内容都有效
+          # 检查文件名：非空、长度>0、不包含路径分隔符
+          # 检查 base64：非空、长度>10（至少包含一些内容）
+          if [ -n "${KEYSTORE_FILE}" ] && \
+             [ "${#KEYSTORE_FILE}" -gt 0 ] && \
+             [ "${KEYSTORE_FILE}" != "/" ] && \
+             [ "${KEYSTORE_FILE}" != "app/" ] && \
+             [ -n "${KEYSTORE_BASE64}" ] && \
+             [ "${#KEYSTORE_BASE64}" -gt 10 ]; then
             echo "使用提供的签名配置..."
             TARGET_FILE="app/${KEYSTORE_FILE}"
             echo "${KEYSTORE_BASE64}" | base64 --decode > "${TARGET_FILE}"
             ./gradlew assembleRelease \
               -PMYAPP_UPLOAD_STORE_FILE="${KEYSTORE_FILE}" \
-              -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.MYAPP_UPLOAD_KEY_ALIAS || '' }}" \
-              -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD || '' }}" \
-              -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD || '' }}"
+              -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" \
+              -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" \
+              -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}"
             rm -f "${TARGET_FILE}"
           else
-            echo "使用临时签名配置（secrets 未配置）..."
+            echo "使用临时签名配置（secrets 未配置或无效）..."
             ./gradlew assembleRelease
           fi
 
