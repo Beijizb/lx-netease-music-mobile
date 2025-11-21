@@ -22,10 +22,29 @@ jobs:
         shell: bash
         run: |
           cd android
-          echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
-          chmod +x ./gradlew
-          ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
-          rm -f app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+          # 如果没有签名配置，创建临时的 keystore
+          if [ ! -f "app/keystore.properties" ]; then
+            echo "创建临时签名配置..."
+            keytool -genkeypair -v -storetype PKCS12 -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "storeFile=debug.keystore" > app/keystore.properties
+            echo "keyAlias=androiddebugkey" >> app/keystore.properties
+            echo "storePassword=android" >> app/keystore.properties
+            echo "keyPassword=android" >> app/keystore.properties
+          fi
+          # 如果有签名 secrets，使用它们
+          KEYSTORE_FILE="${{ secrets.MYAPP_UPLOAD_STORE_FILE }}"
+          KEYSTORE_BASE64="${{ secrets.MYAPP_KEYSTORE_BASE64 }}"
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_FILE" ] && [ "$KEYSTORE_FILE" != "" ]; then
+            echo "使用提供的签名配置..."
+            echo "$KEYSTORE_BASE64" | base64 --decode > "app/$KEYSTORE_FILE"
+            chmod +x ./gradlew
+            ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE="$KEYSTORE_FILE" -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}"
+            rm -f "app/$KEYSTORE_FILE"
+          else
+            echo "使用临时签名配置..."
+            chmod +x ./gradlew
+            ./gradlew assembleRelease
+          fi
 
       # Push tag to GitHub if package.json version's tag is not tagged
       - name: Get package version
