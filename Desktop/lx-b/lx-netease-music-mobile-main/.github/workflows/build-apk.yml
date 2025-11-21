@@ -1,0 +1,91 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: lx-netease-music-mobile-main/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+          cache-dependency-path: lx-netease-music-mobile-main/android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install dependencies
+        working-directory: lx-netease-music-mobile-main
+        run: npm ci
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        working-directory: lx-netease-music-mobile-main/android
+        run: chmod +x gradlew
+
+      - name: Build APK (Debug)
+        working-directory: lx-netease-music-mobile-main/android
+        run: ./gradlew assembleDebug
+        continue-on-error: true
+
+      - name: Build APK (Release)
+        working-directory: lx-netease-music-mobile-main/android
+        run: |
+          # 如果没有签名配置，创建临时的 keystore
+          if [ ! -f "app/keystore.properties" ]; then
+            echo "创建临时签名配置..."
+            keytool -genkeypair -v -storetype PKCS12 -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "storeFile=debug.keystore" > app/keystore.properties
+            echo "keyAlias=androiddebugkey" >> app/keystore.properties
+            echo "storePassword=android" >> app/keystore.properties
+            echo "keyPassword=android" >> app/keystore.properties
+          fi
+          ./gradlew assembleRelease
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: |
+            lx-netease-music-mobile-main/android/app/build/outputs/apk/release/*.apk
+            lx-netease-music-mobile-main/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload APK to Release (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            lx-netease-music-mobile-main/android/app/build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
