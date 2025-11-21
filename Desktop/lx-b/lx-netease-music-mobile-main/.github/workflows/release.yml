@@ -31,17 +31,18 @@ jobs:
             echo "storePassword=android" >> app/keystore.properties
             echo "keyPassword=android" >> app/keystore.properties
           fi
-          # 如果有签名 secrets，使用它们
+          # 检查是否有有效的签名 secrets
           KEYSTORE_FILE="${{ secrets.MYAPP_UPLOAD_STORE_FILE }}"
           KEYSTORE_BASE64="${{ secrets.MYAPP_KEYSTORE_BASE64 }}"
-          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_FILE" ] && [ "$KEYSTORE_FILE" != "" ]; then
+          # 确保变量不为空且不是空字符串
+          if [ -n "${KEYSTORE_BASE64}" ] && [ "${KEYSTORE_BASE64}" != "" ] && [ -n "${KEYSTORE_FILE}" ] && [ "${KEYSTORE_FILE}" != "" ] && [ "${KEYSTORE_FILE}" != "null" ]; then
             echo "使用提供的签名配置..."
-            echo "$KEYSTORE_BASE64" | base64 --decode > "app/$KEYSTORE_FILE"
+            echo "${KEYSTORE_BASE64}" | base64 --decode > "app/${KEYSTORE_FILE}"
             chmod +x ./gradlew
-            ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE="$KEYSTORE_FILE" -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}"
-            rm -f "app/$KEYSTORE_FILE"
+            ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE="${KEYSTORE_FILE}" -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}"
+            rm -f "app/${KEYSTORE_FILE}"
           else
-            echo "使用临时签名配置..."
+            echo "使用临时签名配置（secrets 未配置）..."
             chmod +x ./gradlew
             ./gradlew assembleRelease
           fi
