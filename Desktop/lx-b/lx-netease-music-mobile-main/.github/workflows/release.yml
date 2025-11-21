@@ -8,7 +8,7 @@ on:
 jobs:
   Android:
     name: Android
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest-8-cores
     permissions:
       contents: write
     steps:
@@ -17,6 +17,18 @@ jobs:
 
       - name: Setup Env
         uses: ./.github/actions/setup
+
+      - name: Cache Gradle & npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.npm
+            android/.gradle
+          key: ${{ runner.os }}-build-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
 
       - name: Build Packages
         shell: bash
@@ -85,7 +97,7 @@ jobs:
 
   Release:
     name: Release
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest-8-cores
     needs: [Android]
     steps:
       - name: Check out git repository
