@@ -46,16 +46,24 @@ KEYSTORE_NAME=${input_keystore:-$KEYSTORE_NAME}
 read -p "Key Alias [${KEY_ALIAS}]: " input_alias
 KEY_ALIAS=${input_alias:-$KEY_ALIAS}
 
-read -sp "Store Password (输入时不会显示): " STORE_PASSWORD
+read -sp "Store Password (输入时不会显示，至少 6 个字符): " STORE_PASSWORD
 echo ""
 if [ -z "$STORE_PASSWORD" ]; then
     echo -e "${RED}错误: Store Password 不能为空${NC}"
     exit 1
 fi
+if [ ${#STORE_PASSWORD} -lt 6 ]; then
+    echo -e "${RED}错误: Store Password 至少需要 6 个字符（当前: ${#STORE_PASSWORD} 个字符）${NC}"
+    exit 1
+fi
 
-read -sp "Key Password (输入时不会显示，通常与 Store Password 相同): " KEY_PASSWORD
+read -sp "Key Password (输入时不会显示，至少 6 个字符，通常与 Store Password 相同): " KEY_PASSWORD
 echo ""
 KEY_PASSWORD=${KEY_PASSWORD:-$STORE_PASSWORD}
+if [ ${#KEY_PASSWORD} -lt 6 ]; then
+    echo -e "${RED}错误: Key Password 至少需要 6 个字符（当前: ${#KEY_PASSWORD} 个字符）${NC}"
+    exit 1
+fi
 
 read -p "您的姓名/组织 [LX Music]: " CN_NAME
 CN_NAME=${CN_NAME:-"LX Music"}
