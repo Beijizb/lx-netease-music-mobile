@@ -399,3 +399,12 @@ if (typeof module !== "undefined" && module.exports) {
   globalThis.lx.sources = musicSources;
 }
 
+// 触发初始化事件，通知宿主应用源已就绪
+send(EVENT_NAMES.inited, {
+  sources: musicSources,
+}).then(() => {
+  console.log("[Bilibili] 初始化成功，源已注册");
+}).catch((err) => {
+  console.error("[Bilibili] 初始化失败:", err);
+});
+
