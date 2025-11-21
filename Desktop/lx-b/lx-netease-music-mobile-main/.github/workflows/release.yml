@@ -8,7 +8,7 @@ on:
 jobs:
   Android:
     name: Android
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
     permissions:
       contents: write
     steps:
@@ -85,7 +85,7 @@ jobs:
 
   Release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
     needs: [Android]
     steps:
       - name: Check out git repository
