@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: lx-netease-music-mobile-main/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -34,26 +34,25 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
-          cache-dependency-path: lx-netease-music-mobile-main/android/gradle/wrapper/gradle-wrapper.properties
+          cache-dependency-path: android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Install dependencies
-        working-directory: lx-netease-music-mobile-main
         run: npm ci
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Grant execute permission for gradlew
-        working-directory: lx-netease-music-mobile-main/android
+        working-directory: android
         run: chmod +x gradlew
 
       - name: Build APK (Debug)
-        working-directory: lx-netease-music-mobile-main/android
+        working-directory: android
         run: ./gradlew assembleDebug
         continue-on-error: true
 
       - name: Build APK (Release)
-        working-directory: lx-netease-music-mobile-main/android
+        working-directory: android
         run: |
           # 如果没有签名配置，创建临时的 keystore
           if [ ! -f "app/keystore.properties" ]; then
@@ -74,8 +73,8 @@ jobs:
         with:
           name: app-release-apk
           path: |
-            lx-netease-music-mobile-main/android/app/build/outputs/apk/release/*.apk
-            lx-netease-music-mobile-main/android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: Upload APK to Release (if tag)
@@ -83,7 +82,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            lx-netease-music-mobile-main/android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/apk/release/*.apk
           draft: false
           prerelease: false
         env:
