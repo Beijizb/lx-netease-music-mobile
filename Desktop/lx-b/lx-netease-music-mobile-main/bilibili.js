@@ -132,19 +132,60 @@ async function handleSearchMusic(keyword, page, limit) {
     });
 
     console.log(`[Bilibili] 搜索响应状态: ${resp.statusCode}`);
-    const resultData = resp.body?.data;
-    if (!resultData || !resultData.result) {
+    console.log(`[Bilibili] 响应 body 类型:`, typeof resp.body);
+    console.log(`[Bilibili] 响应 body 结构:`, resp.body ? Object.keys(resp.body) : 'null');
+    
+    // 处理响应数据
+    let bodyData = resp.body;
+    if (typeof bodyData === 'string') {
+      try {
+        bodyData = JSON.parse(bodyData);
+      } catch (e) {
+        console.error("[Bilibili] 解析响应 JSON 失败:", e);
+        throw new Error("搜索失败：响应数据格式错误");
+      }
+    }
+    
+    // B站 API 返回格式: { code: 0, data: { result: [...], numResults: number } }
+    if (bodyData?.code !== 0 && bodyData?.code !== undefined) {
+      console.error("[Bilibili] API 返回错误码:", bodyData.code, bodyData.message);
+      throw new Error(`搜索失败：${bodyData.message || '未知错误'}`);
+    }
+    
+    const resultData = bodyData?.data;
+    if (!resultData) {
       console.error("[Bilibili] 搜索返回数据格式错误:", {
+        hasBody: !!bodyData,
         hasData: !!resultData,
-        hasResult: !!resultData?.result,
-        bodyKeys: resultData ? Object.keys(resultData) : []
+        bodyKeys: bodyData ? Object.keys(bodyData) : [],
+        bodyCode: bodyData?.code
       });
       throw new Error("搜索失败：返回数据格式错误");
     }
+    
+    // result 可能是数组，也可能是对象（包含 vlist 等）
+    let resultList = resultData.result;
+    if (!resultList) {
+      console.error("[Bilibili] 搜索结果不存在:", {
+        resultDataKeys: Object.keys(resultData),
+        hasResult: !!resultData.result
+      });
+      throw new Error("搜索失败：搜索结果为空");
+    }
+    
+    // 如果 result 是对象，尝试获取 vlist
+    if (!Array.isArray(resultList)) {
+      if (resultList.vlist && Array.isArray(resultList.vlist)) {
+        resultList = resultList.vlist;
+      } else {
+        console.error("[Bilibili] result 不是数组:", typeof resultList, resultList);
+        throw new Error("搜索失败：搜索结果格式错误");
+      }
+    }
 
-    console.log(`[Bilibili] 搜索到 ${resultData.result.length} 个结果，总数: ${resultData.numResults || 0}`);
+    console.log(`[Bilibili] 搜索到 ${resultList.length} 个结果，总数: ${resultData.numResults || resultList.length}`);
 
-    const list = resultData.result.map((item, index) => {
+    const list = resultList.map((item, index) => {
       const title = item.title?.replace(/(<em(.*?)>)|(<\/em>)/g, "") || "";
       const duration = durationToSec(item.duration);
       
@@ -180,9 +221,11 @@ async function handleSearchMusic(keyword, page, limit) {
     });
 
     console.log(`[Bilibili] 搜索完成，返回 ${list.length} 首歌曲`);
+    const total = resultData.numResults || resultData.page?.total || list.length;
+    console.log(`[Bilibili] 返回数据:`, { listLength: list.length, total, page, limit: pageSize });
     return {
       list,
-      total: resultData.numResults || list.length,
+      total: total,
       page: page,
       limit: pageSize,
     };

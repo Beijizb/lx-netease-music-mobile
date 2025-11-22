@@ -41,8 +41,8 @@ const state: InitState = {
 }
 
 for (const source of music.sources) {
-  // bilibili 是自定义源，通过自定义源系统处理搜索，不需要 musicSearch 方法
-  if (source.id === 'bi' || music[source.id as LX.OnlineSource]?.musicSearch) {
+  // bilibili 现在是内置源，需要 musicSearch 方法
+  if (music[source.id as LX.OnlineSource]?.musicSearch) {
     state.sources.push(source.id as LX.OnlineSource)
     state.listInfos[source.id as LX.OnlineSource] = {
       page: 1,
@@ -53,8 +53,13 @@ for (const source of music.sources) {
       key: '',
     }
     state.maxPages[source.id as LX.OnlineSource] = 0
+    // 调试日志：确认 B站源已添加
+    if (source.id === 'bi') {
+      console.log('[Search] B站源已添加到搜索源列表:', state.sources)
+    }
   }
 }
 state.sources.push('all')
+console.log('[Search] 最终搜索源列表:', state.sources)
 
 export default state

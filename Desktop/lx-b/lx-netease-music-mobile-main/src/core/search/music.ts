@@ -124,12 +124,16 @@ export const search = async (
   if (!text) return []
   const key = `${page}__${text}`
   
-  // 处理 bilibili 自定义源
+  // 处理 bilibili 内置源
   if (sourceId === 'bi') {
     if (listInfo?.key == key && listInfo?.list.length) return listInfo?.list
     listInfo.key = key
     try {
-      const data = await searchMusicFromUserApi('bi', text, page, listInfo.limit)
+      const data = await (musicSdk[sourceId]?.musicSearch.search(
+        text,
+        page,
+        listInfo.limit
+      ) as Promise<SearchResult>)
       if (key != listInfo.key) return []
       return setListInfo(data, page, text)
     } catch (err: any) {
@@ -144,9 +148,15 @@ export const search = async (
     for (const source of searchMusicState.sources) {
       if (source == 'all') continue
       if (source === 'bi') {
-        // bilibili 使用自定义源搜索
+        // bilibili 使用内置源搜索
         task.push(
-          searchMusicFromUserApi('bi', text, page, searchMusicState.listInfos.all.limit).catch((error: any) => {
+          (
+            (musicSdk[source]?.musicSearch.search(
+              text,
+              page,
+              searchMusicState.listInfos.all.limit
+            ) as Promise<SearchResult>) ?? Promise.reject(new Error('source not found: ' + source))
+          ).catch((error: any) => {
             console.log(error)
             return {
               allPage: 1,

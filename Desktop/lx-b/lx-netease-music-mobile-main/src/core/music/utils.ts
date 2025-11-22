@@ -372,15 +372,11 @@ export const handleGetOnlineMusicUrl = async ({
 
   let reqPromise
   try {
-    // bilibili 是自定义源，使用 global.lx.apis
-    if (musicInfo.source === 'bi' && global.lx.apis?.bi?.getMusicUrl) {
-      reqPromise = global.lx.apis.bi.getMusicUrl(musicInfo, targetQuality).promise
-    } else {
-      reqPromise = musicSdk[musicInfo.source].getMusicUrl(
-        toOldMusicInfo(musicInfo),
-        targetQuality
-      ).promise
-    }
+    // bilibili 现在是内置源，使用 musicSdk
+    reqPromise = musicSdk[musicInfo.source].getMusicUrl(
+      toOldMusicInfo(musicInfo),
+      targetQuality
+    ).promise
   } catch (err: any) {
     reqPromise = Promise.reject(err)
   }

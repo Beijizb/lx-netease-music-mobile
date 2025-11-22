@@ -3,6 +3,7 @@ import kg from './kg'
 import tx from './tx'
 import wy from './wy'
 import mg from './mg'
+import bi from './bi'
 // import yt from './yt'
 import { supportQuality } from './api-source'
 
@@ -42,6 +43,7 @@ const sources = {
   tx,
   wy,
   mg,
+  bi,
   // yt,
 }
 export default {
