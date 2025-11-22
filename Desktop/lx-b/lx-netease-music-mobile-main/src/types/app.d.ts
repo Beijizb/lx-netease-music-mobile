@@ -62,7 +62,27 @@ interface Artist {
   id: string | number;
   name: string;
 }
+interface Global {
+  isDev: boolean
+  lx: GlobalData
+  i18n: I18n
+  app_event: AppEventTypes & {
+    showArtistSelector: (artists: Artist[], onSelect: (artist: Artist) => void) => void;
+    triggerSearch: (text: string) => void;
+    'wy-cookie-set': (cookie: string) => void
+    'yt-cookie-set': (cookie: string) => void
+    showWebLogin: () => void
+    showYouTubeLogin: () => void
+    showVideoPlayer: (url: string) => void
+  }
+  list_event: ListEventTypes
+  dislike_event: DislikeEventTypes
+  state_event: StateEventTypes
+  Buffer: typeof _Buffer
+}
+
 declare global {
+  var global: Global
   var isDev: boolean
   var lx: GlobalData
   var i18n: I18n
