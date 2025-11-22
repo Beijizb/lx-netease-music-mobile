@@ -25,14 +25,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/souvenp/lx-netease-music-mobile.git"
+    "url": "git+https://github.com/Beijizb/lx-netease-music-mobile.git"
   },
   "keywords": [
     "music-player",
     "react-native-app"
   ],
   "author": {
-    "name": "souvenp",
+    "name": "Beijizb",
     "email": "lyswhut@qq.com"
   },
   "license": "Apache-2.0",

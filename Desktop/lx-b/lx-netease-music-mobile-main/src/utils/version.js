@@ -1,20 +1,23 @@
 import { httpGet } from '@/utils/request'
-import { author, name } from '../../package.json'
+import { author, name, repository } from '../../package.json'
 import { downloadFile, stopDownload, temporaryDirectoryPath } from '@/utils/fs'
 import { getSupportedAbis, installApk } from '@/utils/nativeModules/utils'
 import { APP_PROVIDER_NAME } from '@/config/constant'
 
 const abis = ['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86', 'universal']
 
+// 从 repository.url 中提取仓库名，如果没有则使用 name
+const repoName = repository?.url ? repository.url.match(/\/([^/]+)\.git$/)?.[1] || name : name
+
 const address = [
   [
-    `https://raw.githubusercontent.com/${author.name}/${name}/master/publish/version.json`,
+    `https://raw.githubusercontent.com/${author.name}/${repoName}/master/publish/version.json`,
     'direct',
   ],
   // ['https://registry.npmjs.org/lx-music-mobile-version-info/latest', 'npm'],
-  [`https://cdn.jsdelivr.net/gh/${author.name}/${name}/publish/version.json`, 'direct'],
-  [`https://fastly.jsdelivr.net/gh/${author.name}/${name}/publish/version.json`, 'direct'],
-  [`https://gcore.jsdelivr.net/gh/${author.name}/${name}/publish/version.json`, 'direct'],
+  [`https://cdn.jsdelivr.net/gh/${author.name}/${repoName}/publish/version.json`, 'direct'],
+  [`https://fastly.jsdelivr.net/gh/${author.name}/${repoName}/publish/version.json`, 'direct'],
+  [`https://gcore.jsdelivr.net/gh/${author.name}/${repoName}/publish/version.json`, 'direct'],
   // ['https://registry.npmmirror.com/lx-music-mobile-version-info/latest', 'npm'],
   // ['http://cdn.stsky.cn/lx-music/mobile/version.json', 'direct'],
 ]
@@ -85,7 +88,9 @@ let apkSavePath
 
 export const downloadNewVersion = async (version, onDownload = noop) => {
   const abi = await getTargetAbi()
-  const url = `https://github.com/${author.name}/${name}/releases/download/v${version}/${name}-v${version}-${abi}.apk`
+  // 使用实际的仓库名（从 repository.url 提取）来构建下载地址
+  // GitHub Releases 中的文件名格式是: lx-netease-music-mobile-v${version}-${abi}.apk
+  const url = `https://github.com/${author.name}/${repoName}/releases/download/v${version}/${repoName}-v${version}-${abi}.apk`
   let savePath = temporaryDirectoryPath + '/lx-netease-music-mobile.apk'
 
   if (downloadJobId) stopDownload(downloadJobId)
